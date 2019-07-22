@@ -1,4 +1,6 @@
-This branch uses cef code from the 2171 branch and chromium version 39.0.2171.95.
+This branch uses the cef code from the 2171 branch and chromium version 39.0.2171.95.
+Visual Studio 2013 with V120 toolset.
+
 The total size of the app is about 25MB.
 
 cef: https://bitbucket.org/chromiumembedded/cef/src/2171/
