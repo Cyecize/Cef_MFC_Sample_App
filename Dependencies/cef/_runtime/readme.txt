@@ -1,0 +1,1 @@
+Copy these files inside \Release and \Debug folders in order to run the app properly.
