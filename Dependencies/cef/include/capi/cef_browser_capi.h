@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2015 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -41,7 +41,6 @@
 #include "include/capi/cef_base_capi.h"
 #include "include/capi/cef_drag_data_capi.h"
 #include "include/capi/cef_frame_capi.h"
-#include "include/capi/cef_image_capi.h"
 #include "include/capi/cef_navigation_entry_capi.h"
 #include "include/capi/cef_process_message_capi.h"
 #include "include/capi/cef_request_context_capi.h"
@@ -175,7 +174,7 @@ typedef struct _cef_browser_t {
   void (CEF_CALLBACK *get_frame_names)(struct _cef_browser_t* self,
       cef_string_list_t names);
 
-  ///
+  //
   // Send a message to the specified |target_process|. Returns true (1) if the
   // message was sent successfully.
   ///
@@ -196,15 +195,13 @@ typedef struct _cef_run_file_dialog_callback_t {
   cef_base_t base;
 
   ///
-  // Called asynchronously after the file dialog is dismissed.
-  // |selected_accept_filter| is the 0-based index of the value selected from
-  // the accept filters array passed to cef_browser_host_t::RunFileDialog.
-  // |file_paths| will be a single value or a list of values depending on the
-  // dialog mode. If the selection was cancelled |file_paths| will be NULL.
+  // Called asynchronously after the file dialog is dismissed. If the selection
+  // was successful |file_paths| will be a single value or a list of values
+  // depending on the dialog mode. If the selection was cancelled |file_paths|
+  // will be NULL.
   ///
-  void (CEF_CALLBACK *on_file_dialog_dismissed)(
-      struct _cef_run_file_dialog_callback_t* self, int selected_accept_filter,
-      cef_string_list_t file_paths);
+  void (CEF_CALLBACK *cont)(struct _cef_run_file_dialog_callback_t* self,
+      struct _cef_browser_host_t* browser_host, cef_string_list_t file_paths);
 } cef_run_file_dialog_callback_t;
 
 
@@ -229,50 +226,6 @@ typedef struct _cef_navigation_entry_visitor_t {
       struct _cef_navigation_entry_t* entry, int current, int index,
       int total);
 } cef_navigation_entry_visitor_t;
-
-
-///
-// Callback structure for cef_browser_host_t::PrintToPDF. The functions of this
-// structure will be called on the browser process UI thread.
-///
-typedef struct _cef_pdf_print_callback_t {
-  ///
-  // Base structure.
-  ///
-  cef_base_t base;
-
-  ///
-  // Method that will be executed when the PDF printing has completed. |path| is
-  // the output path. |ok| will be true (1) if the printing completed
-  // successfully or false (0) otherwise.
-  ///
-  void (CEF_CALLBACK *on_pdf_print_finished)(
-      struct _cef_pdf_print_callback_t* self, const cef_string_t* path,
-      int ok);
-} cef_pdf_print_callback_t;
-
-
-///
-// Callback structure for cef_browser_host_t::DownloadImage. The functions of
-// this structure will be called on the browser process UI thread.
-///
-typedef struct _cef_download_image_callback_t {
-  ///
-  // Base structure.
-  ///
-  cef_base_t base;
-
-  ///
-  // Method that will be executed when the image download has completed.
-  // |image_url| is the URL that was downloaded and |http_status_code| is the
-  // resulting HTTP status code. |image| is the resulting image, possibly at
-  // multiple scale factors, or NULL if the download failed.
-  ///
-  void (CEF_CALLBACK *on_download_image_finished)(
-      struct _cef_download_image_callback_t* self,
-      const cef_string_t* image_url, int http_status_code,
-      struct _cef_image_t* image);
-} cef_download_image_callback_t;
 
 
 ///
@@ -307,41 +260,30 @@ typedef struct _cef_browser_host_t {
       int force_close);
 
   ///
-  // Helper for closing a browser. Call this function from the top-level window
-  // close handler. Internally this calls CloseBrowser(false (0)) if the close
-  // has not yet been initiated. This function returns false (0) while the close
-  // is pending and true (1) after the close has completed. See close_browser()
-  // and cef_life_span_handler_t::do_close() documentation for additional usage
-  // information. This function must be called on the browser process UI thread.
-  ///
-  int (CEF_CALLBACK *try_close_browser)(struct _cef_browser_host_t* self);
-
-  ///
   // Set whether the browser is focused.
   ///
   void (CEF_CALLBACK *set_focus)(struct _cef_browser_host_t* self, int focus);
 
   ///
-  // Retrieve the window handle for this browser. If this browser is wrapped in
-  // a cef_browser_view_t this function should be called on the browser process
-  // UI thread and it will return the handle for the top-level native window.
+  // Set whether the window containing the browser is visible
+  // (minimized/unminimized, app hidden/unhidden, etc). Only used on Mac OS X.
+  ///
+  void (CEF_CALLBACK *set_window_visibility)(struct _cef_browser_host_t* self,
+      int visible);
+
+  ///
+  // Retrieve the window handle for this browser.
   ///
   cef_window_handle_t (CEF_CALLBACK *get_window_handle)(
       struct _cef_browser_host_t* self);
 
   ///
   // Retrieve the window handle of the browser that opened this browser. Will
-  // return NULL for non-popup windows or if this browser is wrapped in a
-  // cef_browser_view_t. This function can be used in combination with custom
-  // handling of modal windows.
+  // return NULL for non-popup windows. This function can be used in combination
+  // with custom handling of modal windows.
   ///
   cef_window_handle_t (CEF_CALLBACK *get_opener_window_handle)(
       struct _cef_browser_host_t* self);
-
-  ///
-  // Returns true (1) if this browser is wrapped in a cef_browser_view_t.
-  ///
-  int (CEF_CALLBACK *has_view)(struct _cef_browser_host_t* self);
 
   ///
   // Returns the client for this browser.
@@ -373,22 +315,17 @@ typedef struct _cef_browser_host_t {
   // Call to run a file chooser dialog. Only a single file chooser dialog may be
   // pending at any given time. |mode| represents the type of dialog to display.
   // |title| to the title to be used for the dialog and may be NULL to show the
-  // default title ("Open" or "Save" depending on the mode). |default_file_path|
-  // is the path with optional directory and/or file name component that will be
-  // initially selected in the dialog. |accept_filters| are used to restrict the
-  // selectable file types and may any combination of (a) valid lower-cased MIME
-  // types (e.g. "text/*" or "image/*"), (b) individual file extensions (e.g.
-  // ".txt" or ".png"), or (c) combined description and file extension delimited
-  // using "|" and ";" (e.g. "Image Types|.png;.gif;.jpg").
-  // |selected_accept_filter| is the 0-based index of the filter that will be
-  // selected by default. |callback| will be executed after the dialog is
-  // dismissed or immediately if another dialog is already pending. The dialog
-  // will be initiated asynchronously on the UI thread.
+  // default title ("Open" or "Save" depending on the mode). |default_file_name|
+  // is the default file name to select in the dialog. |accept_types| is a list
+  // of valid lower-cased MIME types or file extensions specified in an input
+  // element and is used to restrict selectable files to such types. |callback|
+  // will be executed after the dialog is dismissed or immediately if another
+  // dialog is already pending. The dialog will be initiated asynchronously on
+  // the UI thread.
   ///
   void (CEF_CALLBACK *run_file_dialog)(struct _cef_browser_host_t* self,
       cef_file_dialog_mode_t mode, const cef_string_t* title,
-      const cef_string_t* default_file_path, cef_string_list_t accept_filters,
-      int selected_accept_filter,
+      const cef_string_t* default_file_name, cef_string_list_t accept_types,
       struct _cef_run_file_dialog_callback_t* callback);
 
   ///
@@ -398,44 +335,16 @@ typedef struct _cef_browser_host_t {
       const cef_string_t* url);
 
   ///
-  // Download |image_url| and execute |callback| on completion with the images
-  // received from the renderer. If |is_favicon| is true (1) then cookies are
-  // not sent and not accepted during download. Images with density independent
-  // pixel (DIP) sizes larger than |max_image_size| are filtered out from the
-  // image results. Versions of the image at different scale factors may be
-  // downloaded up to the maximum scale factor supported by the system. If there
-  // are no image results <= |max_image_size| then the smallest image is resized
-  // to |max_image_size| and is the only result. A |max_image_size| of 0 means
-  // unlimited. If |bypass_cache| is true (1) then |image_url| is requested from
-  // the server even if it is present in the browser cache.
-  ///
-  void (CEF_CALLBACK *download_image)(struct _cef_browser_host_t* self,
-      const cef_string_t* image_url, int is_favicon, uint32 max_image_size,
-      int bypass_cache, struct _cef_download_image_callback_t* callback);
-
-  ///
   // Print the current browser contents.
   ///
   void (CEF_CALLBACK *print)(struct _cef_browser_host_t* self);
-
-  ///
-  // Print the current browser contents to the PDF file specified by |path| and
-  // execute |callback| on completion. The caller is responsible for deleting
-  // |path| when done. For PDF printing to work on Linux you must implement the
-  // cef_print_handler_t::GetPdfPaperSize function.
-  ///
-  void (CEF_CALLBACK *print_to_pdf)(struct _cef_browser_host_t* self,
-      const cef_string_t* path,
-      const struct _cef_pdf_print_settings_t* settings,
-      struct _cef_pdf_print_callback_t* callback);
 
   ///
   // Search for |searchText|. |identifier| can be used to have multiple searches
   // running simultaniously. |forward| indicates whether to search forward or
   // backward within the page. |matchCase| indicates whether the search should
   // be case-sensitive. |findNext| indicates whether this is the first request
-  // or a follow-up. The cef_find_handler_t instance, if any, returned via
-  // cef_client_t::GetFindHandler will be called to report find results.
+  // or a follow-up.
   ///
   void (CEF_CALLBACK *find)(struct _cef_browser_host_t* self, int identifier,
       const cef_string_t* searchText, int forward, int matchCase,
@@ -448,13 +357,8 @@ typedef struct _cef_browser_host_t {
       int clearSelection);
 
   ///
-  // Open developer tools (DevTools) in its own browser. The DevTools browser
-  // will remain associated with this browser. If the DevTools browser is
-  // already open then it will be focused, in which case the |windowInfo|,
-  // |client| and |settings| parameters will be ignored. If |inspect_element_at|
-  // is non-NULL then the element at the specified (x,y) location will be
-  // inspected. The |windowInfo| parameter will be ignored if this browser is
-  // wrapped in a cef_browser_view_t.
+  // Open developer tools in its own window. If |inspect_element_at| is non-
+  // NULL the element at the specified (x,y) location will be inspected.
   ///
   void (CEF_CALLBACK *show_dev_tools)(struct _cef_browser_host_t* self,
       const struct _cef_window_info_t* windowInfo,
@@ -463,21 +367,17 @@ typedef struct _cef_browser_host_t {
       const cef_point_t* inspect_element_at);
 
   ///
-  // Explicitly close the associated DevTools browser, if any.
+  // Explicitly close the developer tools window if one exists for this browser
+  // instance.
   ///
   void (CEF_CALLBACK *close_dev_tools)(struct _cef_browser_host_t* self);
-
-  ///
-  // Returns true (1) if this browser currently has an associated DevTools
-  // browser. Must be called on the browser process UI thread.
-  ///
-  int (CEF_CALLBACK *has_dev_tools)(struct _cef_browser_host_t* self);
 
   ///
   // Retrieve a snapshot of current navigation entries as values sent to the
   // specified visitor. If |current_only| is true (1) only the current
   // navigation entry will be sent, otherwise all navigation entries will be
   // sent.
+  ///
   ///
   void (CEF_CALLBACK *get_navigation_entries)(struct _cef_browser_host_t* self,
       struct _cef_navigation_entry_visitor_t* visitor, int current_only);
@@ -596,26 +496,6 @@ typedef struct _cef_browser_host_t {
   ///
   void (CEF_CALLBACK *notify_move_or_resize_started)(
       struct _cef_browser_host_t* self);
-
-  ///
-  // Returns the maximum rate in frames per second (fps) that
-  // cef_render_handler_t:: OnPaint will be called for a windowless browser. The
-  // actual fps may be lower if the browser cannot generate frames at the
-  // requested rate. The minimum value is 1 and the maximum value is 60 (default
-  // 30). This function can only be called on the UI thread.
-  ///
-  int (CEF_CALLBACK *get_windowless_frame_rate)(
-      struct _cef_browser_host_t* self);
-
-  ///
-  // Set the maximum rate in frames per second (fps) that cef_render_handler_t::
-  // OnPaint will be called for a windowless browser. The actual fps may be
-  // lower if the browser cannot generate frames at the requested rate. The
-  // minimum value is 1 and the maximum value is 60 (default 30). Can also be
-  // set at browser creation via cef_browser_tSettings.windowless_frame_rate.
-  ///
-  void (CEF_CALLBACK *set_windowless_frame_rate)(
-      struct _cef_browser_host_t* self, int frame_rate);
 
   ///
   // Get the NSTextInputContext implementation for enabling IME on Mac when

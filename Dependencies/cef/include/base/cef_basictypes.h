@@ -32,6 +32,14 @@
 #define CEF_INCLUDE_BASE_CEF_BASICTYPES_H_
 #pragma once
 
+#if defined(BUILDING_CEF_SHARED)
+// When building CEF include the Chromium header directly.
+#include "base/basictypes.h"
+#else  // !BUILDING_CEF_SHARED
+// The following is substantially similar to the Chromium implementation.
+// If the Chromium implementation diverges the below implementation should be
+// updated to match.
+
 #include <limits.h>         // For UINT_MAX
 #include <stddef.h>         // For size_t
 
@@ -64,14 +72,15 @@ typedef int                 int32;
 typedef unsigned int       uint32;
 #endif
 
-// UTF-16 character type.
-// This should be kept synchronized with base/strings/string16.h
+// UTF-16 character type
 #ifndef char16
-#if defined(WCHAR_T_IS_UTF16)
+#if defined(WIN32)
 typedef wchar_t             char16;
-#elif defined(WCHAR_T_IS_UTF32)
+#else
 typedef unsigned short      char16;
 #endif
 #endif
+
+#endif  // !BUILDING_CEF_SHARED
 
 #endif  // CEF_INCLUDE_BASE_CEF_BASICTYPES_H_

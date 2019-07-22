@@ -38,8 +38,7 @@
 #define CEF_INCLUDE_CEF_WEB_PLUGIN_H_
 
 #include "include/cef_base.h"
-
-class CefBrowser;
+#include "include/cef_browser.h"
 
 ///
 // Information about a specific web plugin.
@@ -105,12 +104,43 @@ void CefVisitWebPluginInfo(CefRefPtr<CefWebPluginInfoVisitor> visitor);
 void CefRefreshWebPlugins();
 
 ///
+// Add a plugin path (directory + file). This change may not take affect until
+// after CefRefreshWebPlugins() is called. Can be called on any thread in the
+// browser process.
+///
+/*--cef()--*/
+void CefAddWebPluginPath(const CefString& path);
+
+///
+// Add a plugin directory. This change may not take affect until after
+// CefRefreshWebPlugins() is called. Can be called on any thread in the browser
+// process.
+///
+/*--cef()--*/
+void CefAddWebPluginDirectory(const CefString& dir);
+
+///
+// Remove a plugin path (directory + file). This change may not take affect
+// until after CefRefreshWebPlugins() is called. Can be called on any thread in
+// the browser process.
+///
+/*--cef()--*/
+void CefRemoveWebPluginPath(const CefString& path);
+
+///
 // Unregister an internal plugin. This may be undone the next time
 // CefRefreshWebPlugins() is called. Can be called on any thread in the browser
 // process.
 ///
 /*--cef()--*/
 void CefUnregisterInternalWebPlugin(const CefString& path);
+
+///
+// Force a plugin to shutdown. Can be called on any thread in the browser
+// process but will be executed on the IO thread.
+///
+/*--cef()--*/
+void CefForceWebPluginShutdown(const CefString& path);
 
 ///
 // Register a plugin crash. Can be called on any thread in the browser process

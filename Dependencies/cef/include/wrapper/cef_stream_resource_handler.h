@@ -90,7 +90,7 @@ class CefStreamResourceHandler : public CefResourceHandler {
   bool read_on_file_thread_;
 
   class Buffer;
-  SCOPED_PTR(Buffer) buffer_;
+  scoped_ptr<Buffer> buffer_;
 #ifndef NDEBUG
   // Used in debug builds to verify that |buffer_| isn't being accessed on
   // multiple threads at the same time.

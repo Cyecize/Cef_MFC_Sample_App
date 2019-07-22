@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Marshall A. Greenblatt. All rights reserved.
+// Copyright (c) 2015 Marshall A. Greenblatt. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -34,39 +34,49 @@
 // more information.
 //
 
-#ifndef CEF_INCLUDE_CAPI_VIEWS_CEF_BUTTON_DELEGATE_CAPI_H_
-#define CEF_INCLUDE_CAPI_VIEWS_CEF_BUTTON_DELEGATE_CAPI_H_
+#ifndef CEF_INCLUDE_CAPI_CEF_URL_CAPI_H_
+#define CEF_INCLUDE_CAPI_CEF_URL_CAPI_H_
 #pragma once
 
-#include "include/capi/views/cef_view_delegate_capi.h"
+#include "include/capi/cef_base_capi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct _cef_button_t;
 
 ///
-// Implement this structure to handle Button events. The functions of this
-// structure will be called on the browser process UI thread unless otherwise
-// indicated.
+// Parse the specified |url| into its component parts. Returns false (0) if the
+// URL is NULL or invalid.
 ///
-typedef struct _cef_button_delegate_t {
-  ///
-  // Base structure.
-  ///
-  cef_view_delegate_t base;
+CEF_EXPORT int cef_parse_url(const cef_string_t* url,
+    struct _cef_urlparts_t* parts);
 
-  ///
-  // Called when |button| is pressed.
-  ///
-  void (CEF_CALLBACK *on_button_pressed)(struct _cef_button_delegate_t* self,
-      struct _cef_button_t* button);
-} cef_button_delegate_t;
+///
+// Creates a URL from the specified |parts|, which must contain a non-NULL spec
+// or a non-NULL host and path (at a minimum), but not both. Returns false (0)
+// if |parts| isn't initialized as described.
+///
+CEF_EXPORT int cef_create_url(const struct _cef_urlparts_t* parts,
+    cef_string_t* url);
 
+///
+// Returns the mime type for the specified file extension or an NULL string if
+// unknown.
+///
+// The resulting string must be freed by calling cef_string_userfree_free().
+CEF_EXPORT cef_string_userfree_t cef_get_mime_type(
+    const cef_string_t* extension);
+
+// Get the extensions associated with the given mime type. This should be passed
+// in lower case. There could be multiple extensions for a given mime type, like
+// "html,htm" for "text/html", or "txt,text,html,..." for "text/*". Any existing
+// elements in the provided vector will not be erased.
+CEF_EXPORT void cef_get_extensions_for_mime_type(const cef_string_t* mime_type,
+    cef_string_list_t extensions);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // CEF_INCLUDE_CAPI_VIEWS_CEF_BUTTON_DELEGATE_CAPI_H_
+#endif  // CEF_INCLUDE_CAPI_CEF_URL_CAPI_H_

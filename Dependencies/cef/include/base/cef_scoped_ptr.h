@@ -119,9 +119,10 @@
 // This can happen in cases where Chromium code is used directly by the
 // client application. When using Chromium code directly always include
 // the Chromium header first to avoid type conflicts.
-#elif defined(USING_CHROMIUM_INCLUDES)
-// Do nothing when building CEF.
-#else  // !USING_CHROMIUM_INCLUDES
+#elif defined(BUILDING_CEF_SHARED)
+// When building CEF include the Chromium header directly.
+#include "base/memory/scoped_ptr.h"
+#else  // !BUILDING_CEF_SHARED
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
 // updated to match.
@@ -214,7 +215,7 @@ struct FreeDeleter {
   }
 };
 
-namespace cef_internal {
+namespace internal {
 
 template <typename T> struct IsNotRefCounted {
   enum {
@@ -326,7 +327,7 @@ class scoped_ptr_impl {
   DISALLOW_COPY_AND_ASSIGN(scoped_ptr_impl);
 };
 
-}  // namespace cef_internal
+}  // namespace internal
 
 }  // namespace base
 
@@ -350,7 +351,7 @@ template <class T, class D = base::DefaultDeleter<T> >
 class scoped_ptr {
   MOVE_ONLY_TYPE_FOR_CPP_03(scoped_ptr, RValue)
 
-  COMPILE_ASSERT(base::cef_internal::IsNotRefCounted<T>::value,
+  COMPILE_ASSERT(base::internal::IsNotRefCounted<T>::value,
                  T_is_refcounted_type_and_needs_scoped_refptr);
 
  public:
@@ -430,7 +431,7 @@ class scoped_ptr {
   // scoped_ptr2" will compile but do the wrong thing (i.e., convert
   // to Testable and then do the comparison).
  private:
-  typedef base::cef_internal::scoped_ptr_impl<element_type, deleter_type>
+  typedef base::internal::scoped_ptr_impl<element_type, deleter_type>
       scoped_ptr::*Testable;
 
  public:
@@ -470,7 +471,7 @@ class scoped_ptr {
  private:
   // Needed to reach into |impl_| in the constructor.
   template <typename U, typename V> friend class scoped_ptr;
-  base::cef_internal::scoped_ptr_impl<element_type, deleter_type> impl_;
+  base::internal::scoped_ptr_impl<element_type, deleter_type> impl_;
 
   // Forbidden for API compatibility with std::unique_ptr.
   explicit scoped_ptr(int disallow_construction_from_null);
@@ -540,7 +541,7 @@ class scoped_ptr<T[], D> {
   // Allow scoped_ptr<element_type> to be used in boolean expressions, but not
   // implicitly convertible to a real bool (which is dangerous).
  private:
-  typedef base::cef_internal::scoped_ptr_impl<element_type, deleter_type>
+  typedef base::internal::scoped_ptr_impl<element_type, deleter_type>
       scoped_ptr::*Testable;
 
  public:
@@ -571,7 +572,7 @@ class scoped_ptr<T[], D> {
   enum { type_must_be_complete = sizeof(element_type) };
 
   // Actually hold the data.
-  base::cef_internal::scoped_ptr_impl<element_type, deleter_type> impl_;
+  base::internal::scoped_ptr_impl<element_type, deleter_type> impl_;
 
   // Disable initialization from any type other than element_type*, by
   // providing a constructor that matches such an initialization, but is
@@ -618,6 +619,6 @@ scoped_ptr<T> make_scoped_ptr(T* ptr) {
   return scoped_ptr<T>(ptr);
 }
 
-#endif  // !USING_CHROMIUM_INCLUDES
+#endif  // !BUILDING_CEF_SHARED
 
 #endif  // CEF_INCLUDE_BASE_CEF_MEMORY_SCOPED_PTR_H_

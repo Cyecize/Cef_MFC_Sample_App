@@ -41,7 +41,6 @@
 #include "include/cef_base.h"
 #include "include/cef_drag_data.h"
 #include "include/cef_frame.h"
-#include "include/cef_image.h"
 #include "include/cef_navigation_entry.h"
 #include "include/cef_process_message.h"
 #include "include/cef_request_context.h"
@@ -182,7 +181,7 @@ class CefBrowser : public virtual CefBase {
   /*--cef()--*/
   virtual void GetFrameNames(std::vector<CefString>& names) =0;
 
-  ///
+  //
   // Send a message to the specified |target_process|. Returns true if the
   // message was sent successfully.
   ///
@@ -200,15 +199,14 @@ class CefBrowser : public virtual CefBase {
 class CefRunFileDialogCallback : public virtual CefBase {
  public:
   ///
-  // Called asynchronously after the file dialog is dismissed.
-  // |selected_accept_filter| is the 0-based index of the value selected from
-  // the accept filters array passed to CefBrowserHost::RunFileDialog.
-  // |file_paths| will be a single value or a list of values depending on the
-  // dialog mode. If the selection was cancelled |file_paths| will be empty.
+  // Called asynchronously after the file dialog is dismissed. If the selection
+  // was successful |file_paths| will be a single value or a list of values
+  // depending on the dialog mode. If the selection was cancelled |file_paths|
+  // will be empty.
   ///
-  /*--cef(index_param=selected_accept_filter,optional_param=file_paths)--*/
+  /*--cef(capi_name=cont)--*/
   virtual void OnFileDialogDismissed(
-      int selected_accept_filter,
+      CefRefPtr<CefBrowserHost> browser_host,
       const std::vector<CefString>& file_paths) =0;
 };
 
@@ -232,44 +230,6 @@ class CefNavigationEntryVisitor : public virtual CefBase {
                      bool current,
                      int index,
                      int total) =0;
-};
-
-
-///
-// Callback interface for CefBrowserHost::PrintToPDF. The methods of this class
-// will be called on the browser process UI thread.
-///
-/*--cef(source=client)--*/
-class CefPdfPrintCallback : public virtual CefBase {
- public:
-  ///
-  // Method that will be executed when the PDF printing has completed. |path|
-  // is the output path. |ok| will be true if the printing completed
-  // successfully or false otherwise.
-  ///
-  /*--cef()--*/
-  virtual void OnPdfPrintFinished(const CefString& path, bool ok) =0;
-};
-
-
-///
-// Callback interface for CefBrowserHost::DownloadImage. The methods of this
-// class will be called on the browser process UI thread.
-///
-/*--cef(source=client)--*/
-class CefDownloadImageCallback : public virtual CefBase {
- public:
-  ///
-  // Method that will be executed when the image download has completed.
-  // |image_url| is the URL that was downloaded and |http_status_code| is the
-  // resulting HTTP status code. |image| is the resulting image, possibly at
-  // multiple scale factors, or empty if the download failed.
-  ///
-  /*--cef(optional_param=image)--*/
-  virtual void OnDownloadImageFinished(
-     const CefString& image_url,
-     int http_status_code,
-     CefRefPtr<CefImage> image) =0;
 };
 
 
@@ -337,44 +297,31 @@ class CefBrowserHost : public virtual CefBase {
   virtual void CloseBrowser(bool force_close) =0;
 
   ///
-  // Helper for closing a browser. Call this method from the top-level window
-  // close handler. Internally this calls CloseBrowser(false) if the close has
-  // not yet been initiated. This method returns false while the close is
-  // pending and true after the close has completed. See CloseBrowser() and
-  // CefLifeSpanHandler::DoClose() documentation for additional usage
-  // information. This method must be called on the browser process UI thread.
-  ///
-  /*--cef()--*/
-  virtual bool TryCloseBrowser() =0;
-
-  ///
   // Set whether the browser is focused.
   ///
   /*--cef()--*/
   virtual void SetFocus(bool focus) =0;
 
   ///
-  // Retrieve the window handle for this browser. If this browser is wrapped in
-  // a CefBrowserView this method should be called on the browser process UI
-  // thread and it will return the handle for the top-level native window.
+  // Set whether the window containing the browser is visible
+  // (minimized/unminimized, app hidden/unhidden, etc). Only used on Mac OS X.
+  ///
+  /*--cef()--*/
+  virtual void SetWindowVisibility(bool visible) =0;
+
+  ///
+  // Retrieve the window handle for this browser.
   ///
   /*--cef()--*/
   virtual CefWindowHandle GetWindowHandle() =0;
 
   ///
   // Retrieve the window handle of the browser that opened this browser. Will
-  // return NULL for non-popup windows or if this browser is wrapped in a
-  // CefBrowserView. This method can be used in combination with custom handling
-  // of modal windows. 
+  // return NULL for non-popup windows. This method can be used in combination
+  // with custom handling of modal windows.
   ///
   /*--cef()--*/
   virtual CefWindowHandle GetOpenerWindowHandle() =0;
-
-  ///
-  // Returns true if this browser is wrapped in a CefBrowserView.
-  ///
-  /*--cef()--*/
-  virtual bool HasView() =0;
 
   ///
   // Returns the client for this browser.
@@ -408,25 +355,20 @@ class CefBrowserHost : public virtual CefBase {
   // Call to run a file chooser dialog. Only a single file chooser dialog may be
   // pending at any given time. |mode| represents the type of dialog to display.
   // |title| to the title to be used for the dialog and may be empty to show the
-  // default title ("Open" or "Save" depending on the mode). |default_file_path|
-  // is the path with optional directory and/or file name component that will be
-  // initially selected in the dialog. |accept_filters| are used to restrict the
-  // selectable file types and may any combination of (a) valid lower-cased MIME
-  // types (e.g. "text/*" or "image/*"), (b) individual file extensions (e.g.
-  // ".txt" or ".png"), or (c) combined description and file extension delimited
-  // using "|" and ";" (e.g. "Image Types|.png;.gif;.jpg").
-  // |selected_accept_filter| is the 0-based index of the filter that will be
-  // selected by default. |callback| will be executed after the dialog is
-  // dismissed or immediately if another dialog is already pending. The dialog
-  // will be initiated asynchronously on the UI thread.
+  // default title ("Open" or "Save" depending on the mode). |default_file_name|
+  // is the default file name to select in the dialog. |accept_types| is a list
+  // of valid lower-cased MIME types or file extensions specified in an input
+  // element and is used to restrict selectable files to such types. |callback|
+  // will be executed after the dialog is dismissed or immediately if another
+  // dialog is already pending. The dialog will be initiated asynchronously on
+  // the UI thread.
   ///
-  /*--cef(optional_param=title,optional_param=default_file_path,
-          optional_param=accept_filters,index_param=selected_accept_filter)--*/
+  /*--cef(optional_param=title,optional_param=default_file_name,
+          optional_param=accept_types)--*/
   virtual void RunFileDialog(FileDialogMode mode,
                              const CefString& title,
-                             const CefString& default_file_path,
-                             const std::vector<CefString>& accept_filters,
-                             int selected_accept_filter,
+                             const CefString& default_file_name,
+                             const std::vector<CefString>& accept_types,
                              CefRefPtr<CefRunFileDialogCallback> callback) =0;
 
   ///
@@ -436,48 +378,17 @@ class CefBrowserHost : public virtual CefBase {
   virtual void StartDownload(const CefString& url) =0;
 
   ///
-  // Download |image_url| and execute |callback| on completion with the images
-  // received from the renderer. If |is_favicon| is true then cookies are not
-  // sent and not accepted during download. Images with density independent
-  // pixel (DIP) sizes larger than |max_image_size| are filtered out from the
-  // image results. Versions of the image at different scale factors may be
-  // downloaded up to the maximum scale factor supported by the system. If there
-  // are no image results <= |max_image_size| then the smallest image is resized
-  // to |max_image_size| and is the only result. A |max_image_size| of 0 means
-  // unlimited. If |bypass_cache| is true then |image_url| is requested from the
-  // server even if it is present in the browser cache.
-  ///
-  /*--cef()--*/
-  virtual void DownloadImage(const CefString& image_url,
-                             bool is_favicon,
-                             uint32 max_image_size,
-                             bool bypass_cache,
-                             CefRefPtr<CefDownloadImageCallback> callback) =0;
-
-  ///
   // Print the current browser contents.
   ///
   /*--cef()--*/
   virtual void Print() =0;
 
   ///
-  // Print the current browser contents to the PDF file specified by |path| and
-  // execute |callback| on completion. The caller is responsible for deleting
-  // |path| when done. For PDF printing to work on Linux you must implement the
-  // CefPrintHandler::GetPdfPaperSize method.
-  ///
-  /*--cef(optional_param=callback)--*/
-  virtual void PrintToPDF(const CefString& path,
-                          const CefPdfPrintSettings& settings,
-                          CefRefPtr<CefPdfPrintCallback> callback) =0;
-
-  ///
   // Search for |searchText|. |identifier| can be used to have multiple searches
   // running simultaniously. |forward| indicates whether to search forward or
   // backward within the page. |matchCase| indicates whether the search should
   // be case-sensitive. |findNext| indicates whether this is the first request
-  // or a follow-up. The CefFindHandler instance, if any, returned via
-  // CefClient::GetFindHandler will be called to report find results.
+  // or a follow-up.
   ///
   /*--cef()--*/
   virtual void Find(int identifier, const CefString& searchText,
@@ -490,38 +401,27 @@ class CefBrowserHost : public virtual CefBase {
   virtual void StopFinding(bool clearSelection) =0;
 
   ///
-  // Open developer tools (DevTools) in its own browser. The DevTools browser
-  // will remain associated with this browser. If the DevTools browser is
-  // already open then it will be focused, in which case the |windowInfo|,
-  // |client| and |settings| parameters will be ignored. If |inspect_element_at|
-  // is non-empty then the element at the specified (x,y) location will be
-  // inspected. The |windowInfo| parameter will be ignored if this browser is
-  // wrapped in a CefBrowserView.
+  // Open developer tools in its own window. If |inspect_element_at| is non-
+  // empty the element at the specified (x,y) location will be inspected.
   ///
-  /*--cef(optional_param=windowInfo,optional_param=client,
-          optional_param=settings,optional_param=inspect_element_at)--*/
+  /*--cef(optional_param=inspect_element_at)--*/
   virtual void ShowDevTools(const CefWindowInfo& windowInfo,
                             CefRefPtr<CefClient> client,
                             const CefBrowserSettings& settings,
                             const CefPoint& inspect_element_at) =0;
 
   ///
-  // Explicitly close the associated DevTools browser, if any.
+  // Explicitly close the developer tools window if one exists for this browser
+  // instance.
   ///
   /*--cef()--*/
   virtual void CloseDevTools() =0;
 
   ///
-  // Returns true if this browser currently has an associated DevTools browser.
-  // Must be called on the browser process UI thread.
-  ///
-  /*--cef()--*/
-  virtual bool HasDevTools() =0;
-
-  ///
   // Retrieve a snapshot of current navigation entries as values sent to the
   // specified visitor. If |current_only| is true only the current navigation
   // entry will be sent, otherwise all navigation entries will be sent.
+  ///
   ///
   /*--cef()--*/
   virtual void GetNavigationEntries(
@@ -647,26 +547,6 @@ class CefBrowserHost : public virtual CefBase {
   ///
   /*--cef()--*/
   virtual void NotifyMoveOrResizeStarted() =0;
-
-  ///
-  // Returns the maximum rate in frames per second (fps) that CefRenderHandler::
-  // OnPaint will be called for a windowless browser. The actual fps may be
-  // lower if the browser cannot generate frames at the requested rate. The
-  // minimum value is 1 and the maximum value is 60 (default 30). This method
-  // can only be called on the UI thread.
-  ///
-  /*--cef()--*/
-  virtual int GetWindowlessFrameRate() =0;
-
-  ///
-  // Set the maximum rate in frames per second (fps) that CefRenderHandler::
-  // OnPaint will be called for a windowless browser. The actual fps may be
-  // lower if the browser cannot generate frames at the requested rate. The
-  // minimum value is 1 and the maximum value is 60 (default 30). Can also be
-  // set at browser creation via CefBrowserSettings.windowless_frame_rate.
-  ///
-  /*--cef()--*/
-  virtual void SetWindowlessFrameRate(int frame_rate) =0;
 
   ///
   // Get the NSTextInputContext implementation for enabling IME on Mac when

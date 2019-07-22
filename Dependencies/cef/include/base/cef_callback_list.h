@@ -37,10 +37,10 @@
 // This can happen in cases where Chromium code is used directly by the
 // client application. When using Chromium code directly always include
 // the Chromium header first to avoid type conflicts.
-#elif defined(USING_CHROMIUM_INCLUDES)
+#elif defined(BUILDING_CEF_SHARED)
 // When building CEF include the Chromium header directly.
 #include "base/callback_list.h"
-#else  // !USING_CHROMIUM_INCLUDES
+#else  // !BUILDING_CEF_SHARED
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
 // updated to match.
@@ -111,7 +111,7 @@
 
 namespace base {
 
-namespace cef_internal {
+namespace internal {
 
 template <typename CallbackType>
 class CallbackListBase {
@@ -240,20 +240,20 @@ class CallbackListBase {
   DISALLOW_COPY_AND_ASSIGN(CallbackListBase);
 };
 
-}  // namespace cef_internal
+}  // namespace internal
 
 template <typename Sig> class CallbackList;
 
 template <>
 class CallbackList<void(void)>
-    : public cef_internal::CallbackListBase<Callback<void(void)> > {
+    : public internal::CallbackListBase<Callback<void(void)> > {
  public:
   typedef Callback<void(void)> CallbackType;
 
   CallbackList() {}
 
   void Notify() {
-    cef_internal::CallbackListBase<CallbackType>::Iterator it =
+    internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -267,14 +267,14 @@ class CallbackList<void(void)>
 
 template <typename A1>
 class CallbackList<void(A1)>
-    : public cef_internal::CallbackListBase<Callback<void(A1)> > {
+    : public internal::CallbackListBase<Callback<void(A1)> > {
  public:
   typedef Callback<void(A1)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -288,15 +288,15 @@ class CallbackList<void(A1)>
 
 template <typename A1, typename A2>
 class CallbackList<void(A1, A2)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2)> > {
+    : public internal::CallbackListBase<Callback<void(A1, A2)> > {
  public:
   typedef Callback<void(A1, A2)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -310,16 +310,16 @@ class CallbackList<void(A1, A2)>
 
 template <typename A1, typename A2, typename A3>
 class CallbackList<void(A1, A2, A3)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2, A3)> > {
+    : public internal::CallbackListBase<Callback<void(A1, A2, A3)> > {
  public:
   typedef Callback<void(A1, A2, A3)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2,
-              typename cef_internal::CallbackParamTraits<A3>::ForwardType a3) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2,
+              typename internal::CallbackParamTraits<A3>::ForwardType a3) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -333,17 +333,17 @@ class CallbackList<void(A1, A2, A3)>
 
 template <typename A1, typename A2, typename A3, typename A4>
 class CallbackList<void(A1, A2, A3, A4)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2, A3, A4)> > {
+    : public internal::CallbackListBase<Callback<void(A1, A2, A3, A4)> > {
  public:
   typedef Callback<void(A1, A2, A3, A4)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2,
-              typename cef_internal::CallbackParamTraits<A3>::ForwardType a3,
-              typename cef_internal::CallbackParamTraits<A4>::ForwardType a4) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2,
+              typename internal::CallbackParamTraits<A3>::ForwardType a3,
+              typename internal::CallbackParamTraits<A4>::ForwardType a4) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -357,18 +357,18 @@ class CallbackList<void(A1, A2, A3, A4)>
 
 template <typename A1, typename A2, typename A3, typename A4, typename A5>
 class CallbackList<void(A1, A2, A3, A4, A5)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5)> > {
+    : public internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5)> > {
  public:
   typedef Callback<void(A1, A2, A3, A4, A5)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2,
-              typename cef_internal::CallbackParamTraits<A3>::ForwardType a3,
-              typename cef_internal::CallbackParamTraits<A4>::ForwardType a4,
-              typename cef_internal::CallbackParamTraits<A5>::ForwardType a5) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2,
+              typename internal::CallbackParamTraits<A3>::ForwardType a3,
+              typename internal::CallbackParamTraits<A4>::ForwardType a4,
+              typename internal::CallbackParamTraits<A5>::ForwardType a5) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -383,20 +383,20 @@ class CallbackList<void(A1, A2, A3, A4, A5)>
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
     typename A6>
 class CallbackList<void(A1, A2, A3, A4, A5, A6)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5,
+    : public internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5,
         A6)> > {
  public:
   typedef Callback<void(A1, A2, A3, A4, A5, A6)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2,
-              typename cef_internal::CallbackParamTraits<A3>::ForwardType a3,
-              typename cef_internal::CallbackParamTraits<A4>::ForwardType a4,
-              typename cef_internal::CallbackParamTraits<A5>::ForwardType a5,
-              typename cef_internal::CallbackParamTraits<A6>::ForwardType a6) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2,
+              typename internal::CallbackParamTraits<A3>::ForwardType a3,
+              typename internal::CallbackParamTraits<A4>::ForwardType a4,
+              typename internal::CallbackParamTraits<A5>::ForwardType a5,
+              typename internal::CallbackParamTraits<A6>::ForwardType a6) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -411,21 +411,21 @@ class CallbackList<void(A1, A2, A3, A4, A5, A6)>
 template <typename A1, typename A2, typename A3, typename A4, typename A5,
     typename A6, typename A7>
 class CallbackList<void(A1, A2, A3, A4, A5, A6, A7)>
-    : public cef_internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5, A6,
+    : public internal::CallbackListBase<Callback<void(A1, A2, A3, A4, A5, A6,
         A7)> > {
  public:
   typedef Callback<void(A1, A2, A3, A4, A5, A6, A7)> CallbackType;
 
   CallbackList() {}
 
-  void Notify(typename cef_internal::CallbackParamTraits<A1>::ForwardType a1,
-              typename cef_internal::CallbackParamTraits<A2>::ForwardType a2,
-              typename cef_internal::CallbackParamTraits<A3>::ForwardType a3,
-              typename cef_internal::CallbackParamTraits<A4>::ForwardType a4,
-              typename cef_internal::CallbackParamTraits<A5>::ForwardType a5,
-              typename cef_internal::CallbackParamTraits<A6>::ForwardType a6,
-              typename cef_internal::CallbackParamTraits<A7>::ForwardType a7) {
-    typename cef_internal::CallbackListBase<CallbackType>::Iterator it =
+  void Notify(typename internal::CallbackParamTraits<A1>::ForwardType a1,
+              typename internal::CallbackParamTraits<A2>::ForwardType a2,
+              typename internal::CallbackParamTraits<A3>::ForwardType a3,
+              typename internal::CallbackParamTraits<A4>::ForwardType a4,
+              typename internal::CallbackParamTraits<A5>::ForwardType a5,
+              typename internal::CallbackParamTraits<A6>::ForwardType a6,
+              typename internal::CallbackParamTraits<A7>::ForwardType a7) {
+    typename internal::CallbackListBase<CallbackType>::Iterator it =
         this->GetIterator();
     CallbackType* cb;
     while ((cb = it.GetNext()) != NULL) {
@@ -439,6 +439,6 @@ class CallbackList<void(A1, A2, A3, A4, A5, A6, A7)>
 
 }  // namespace base
 
-#endif  // !USING_CHROMIUM_INCLUDES
+#endif  // !BUILDING_CEF_SHARED
 
 #endif  // CEF_INCLUDE_BASE_CEF_CALLBACK_LIST_H_

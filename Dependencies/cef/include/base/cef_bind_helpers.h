@@ -175,10 +175,10 @@
 // This can happen in cases where Chromium code is used directly by the
 // client application. When using Chromium code directly always include
 // the Chromium header first to avoid type conflicts.
-#elif defined(USING_CHROMIUM_INCLUDES)
+#elif defined(BUILDING_CEF_SHARED)
 // When building CEF include the Chromium header directly.
 #include "base/bind_helpers.h"
-#else  // !USING_CHROMIUM_INCLUDES
+#else  // !BUILDING_CEF_SHARED
 // The following is substantially similar to the Chromium implementation.
 // If the Chromium implementation diverges the below implementation should be
 // updated to match.
@@ -189,7 +189,7 @@
 #include "include/base/cef_weak_ptr.h"
 
 namespace base {
-namespace cef_internal {
+namespace internal {
 
 // Use the Substitution Failure Is Not An Error (SFINAE) trick to inspect T
 // for the existence of AddRef() and Release() functions of the correct
@@ -531,21 +531,21 @@ struct IsWeakMethod<true, WeakPtr<T> > : public true_type {};
 template <typename T>
 struct IsWeakMethod<true, ConstRefWrapper<WeakPtr<T> > > : public true_type {};
 
-}  // namespace cef_internal
+}  // namespace internal
 
 template <typename T>
-static inline cef_internal::UnretainedWrapper<T> Unretained(T* o) {
-  return cef_internal::UnretainedWrapper<T>(o);
+static inline internal::UnretainedWrapper<T> Unretained(T* o) {
+  return internal::UnretainedWrapper<T>(o);
 }
 
 template <typename T>
-static inline cef_internal::ConstRefWrapper<T> ConstRef(const T& o) {
-  return cef_internal::ConstRefWrapper<T>(o);
+static inline internal::ConstRefWrapper<T> ConstRef(const T& o) {
+  return internal::ConstRefWrapper<T>(o);
 }
 
 template <typename T>
-static inline cef_internal::OwnedWrapper<T> Owned(T* o) {
-  return cef_internal::OwnedWrapper<T>(o);
+static inline internal::OwnedWrapper<T> Owned(T* o) {
+  return internal::OwnedWrapper<T>(o);
 }
 
 // We offer 2 syntaxes for calling Passed().  The first takes a temporary and
@@ -553,23 +553,23 @@ static inline cef_internal::OwnedWrapper<T> Owned(T* o) {
 // takes a pointer to the scoper and is just syntactic sugar to avoid having
 // to write Passed(scoper.Pass()).
 template <typename T>
-static inline cef_internal::PassedWrapper<T> Passed(T scoper) {
-  return cef_internal::PassedWrapper<T>(scoper.Pass());
+static inline internal::PassedWrapper<T> Passed(T scoper) {
+  return internal::PassedWrapper<T>(scoper.Pass());
 }
 template <typename T>
-static inline cef_internal::PassedWrapper<T> Passed(T* scoper) {
-  return cef_internal::PassedWrapper<T>(scoper->Pass());
-}
-
-template <typename T>
-static inline cef_internal::IgnoreResultHelper<T> IgnoreResult(T data) {
-  return cef_internal::IgnoreResultHelper<T>(data);
+static inline internal::PassedWrapper<T> Passed(T* scoper) {
+  return internal::PassedWrapper<T>(scoper->Pass());
 }
 
 template <typename T>
-static inline cef_internal::IgnoreResultHelper<Callback<T> >
+static inline internal::IgnoreResultHelper<T> IgnoreResult(T data) {
+  return internal::IgnoreResultHelper<T>(data);
+}
+
+template <typename T>
+static inline internal::IgnoreResultHelper<Callback<T> >
 IgnoreResult(const Callback<T>& data) {
-  return cef_internal::IgnoreResultHelper<Callback<T> >(data);
+  return internal::IgnoreResultHelper<Callback<T> >(data);
 }
 
 void DoNothing();
@@ -581,6 +581,6 @@ void DeletePointer(T* obj) {
 
 }  // namespace base
 
-#endif  // !USING_CHROMIUM_INCLUDES
+#endif  // !BUILDING_CEF_SHARED
 
 #endif  // CEF_INCLUDE_BASE_CEF_BIND_HELPERS_H_

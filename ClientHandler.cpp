@@ -46,13 +46,13 @@ void ClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString
       m_delegate->OnSetTitle(title);
 }
 
-void ClientHandler::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
-{
-   CEF_REQUIRE_UI_THREAD();
-
-   if(m_delegate != nullptr)
-      m_delegate->OnSetFullscreen(fullscreen);
-}
+//void ClientHandler::OnFullscreenModeChange(CefRefPtr<CefBrowser> browser, bool fullscreen)
+//{
+//   CEF_REQUIRE_UI_THREAD();
+//
+//   if(m_delegate != nullptr)
+//      m_delegate->OnSetFullscreen(fullscreen);
+//}
 
 void ClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
