@@ -127,30 +127,62 @@ BOOL CefMfcdDemoApp::InitInstance()
 	return TRUE;
 }
 
+BOOL CefMfcdDemoApp::PreTranslateMessage(MSG* pMsg)
+{
+	auto msg = pMsg->message;
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		BOOL bCtrl = ::GetKeyState(VK_CONTROL) & 0x8000;
+
+		if (bCtrl)
+		{
+			auto mainWindow = static_cast<CMainFrame*>(AfxGetMainWnd());
+			CString urlMsg;
+
+			switch (pMsg->wParam)
+			{
+			case VK_OEM_PLUS:
+			case 0x6B: //num pad +	
+				urlMsg = CString(_T("Plus Pressed"));
+				mainWindow->SetUrl(urlMsg);
+				break;
+			case VK_OEM_MINUS:
+			case 0x6D: //num pad -
+				urlMsg = CString(_T("Minus pressed!"));
+				mainWindow->SetUrl(urlMsg);
+				break;
+			default: break;
+			}
+		}
+	}
+
+	return CWinApp::PreTranslateMessage(pMsg);
+}
+
 int CefMfcdDemoApp::ExitInstance()
 {
 	//TODO: handle additional resources you may have added
 	AfxOleTerm(FALSE);
 
-   UninitializeCef();
+	UninitializeCef();
 
 	return CWinApp::ExitInstance();
 }
 
 BOOL CefMfcdDemoApp::PumpMessage()
 {
-   auto result = CWinApp::PumpMessage();
+	auto result = CWinApp::PumpMessage();
 
-   // If there are other messages on queue then return right away
-   // otherwise CEF has a habit of eating keystrokes not meant for it
-   MSG msg;
-   if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
-	   return result;
+	// If there are other messages on queue then return right away
+	// otherwise CEF has a habit of eating keystrokes not meant for it
+	MSG msg;
+	if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+		return result;
 
-   // Allow Cef to do his thing
-   CefDoMessageLoopWork();
-   
-   return result;
+	// Allow Cef to do his thing
+	CefDoMessageLoopWork();
+
+	return result;
 }
 
 // CefMfcdDemoApp message handlers
@@ -163,7 +195,7 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 	enum { IDD = IDD_ABOUTBOX };
 
 protected:
@@ -215,6 +247,6 @@ bool CefMfcdDemoApp::InitializeCef()
 
 void CefMfcdDemoApp::UninitializeCef()
 {
-   CefShutdown();
+	CefShutdown();
 }
 

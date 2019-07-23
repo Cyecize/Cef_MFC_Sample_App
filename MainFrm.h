@@ -21,6 +21,7 @@ public:
 // Operations
 public:
    void SetUrl(CString const & url);
+//TODO: set Zoom from here
 
 // Overrides
 public:
