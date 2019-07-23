@@ -11,6 +11,7 @@
 
 #include "include/cef_base.h"
 #include "include/cef_app.h" 
+#include "MainFrm.h"
 
 // Implement application-level callbacks for the browser process.
 class CefMfcCefApp : public CefApp {
@@ -47,6 +48,7 @@ private:
 	void UninitializeCef();
 
 	CefRefPtr<CefApp> m_app;
+	CMainFrame* main_frame;
 };
 
 extern CefMfcdDemoApp theApp;

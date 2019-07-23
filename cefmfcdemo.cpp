@@ -124,6 +124,8 @@ BOOL CefMfcdDemoApp::InitInstance()
 	// The one and only window has been initialized, so show and update it
 	m_pMainWnd->ShowWindow(SW_SHOW);
 	m_pMainWnd->UpdateWindow();
+
+	main_frame = static_cast<CMainFrame*>(AfxGetMainWnd());
 	return TRUE;
 }
 
@@ -135,21 +137,16 @@ BOOL CefMfcdDemoApp::PreTranslateMessage(MSG* pMsg)
 		BOOL bCtrl = ::GetKeyState(VK_CONTROL) & 0x8000;
 
 		if (bCtrl)
-		{
-			auto mainWindow = static_cast<CMainFrame*>(AfxGetMainWnd());
-			CString urlMsg;
-
+		{	
 			switch (pMsg->wParam)
 			{
 			case VK_OEM_PLUS:
 			case 0x6B: //num pad +	
-				urlMsg = CString(_T("Plus Pressed"));
-				mainWindow->SetUrl(urlMsg);
+				main_frame->ZoomIn();
 				break;
 			case VK_OEM_MINUS:
 			case 0x6D: //num pad -
-				urlMsg = CString(_T("Minus pressed!"));
-				mainWindow->SetUrl(urlMsg);
+				main_frame->ZoomOut();
 				break;
 			default: break;
 			}
@@ -249,4 +246,5 @@ void CefMfcdDemoApp::UninitializeCef()
 {
 	CefShutdown();
 }
+
 
