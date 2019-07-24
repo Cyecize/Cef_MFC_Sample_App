@@ -4,13 +4,14 @@
 #pragma once
 
 #ifndef __AFXWIN_H__
-	#error "include 'stdafx.h' before including this file for PCH"
+#error "include 'stdafx.h' before including this file for PCH"
 #endif
 
 #include "resource.h"       // main symbols
 
 #include "include/cef_base.h"
 #include "include/cef_app.h" 
+#include "MainFrm.h"
 
 // Implement application-level callbacks for the browser process.
 class CefMfcCefApp : public CefApp {
@@ -31,22 +32,23 @@ class CefMfcdDemoApp : public CWinApp
 public:
 	CefMfcdDemoApp();
 
-
-// Overrides
+	// Overrides
 public:
-	virtual BOOL InitInstance();
-	virtual int ExitInstance();
-   virtual BOOL PumpMessage() override;
+	virtual BOOL InitInstance() override;
+	virtual int ExitInstance() override;
+	virtual BOOL PreTranslateMessage(MSG* pMsg) override;
+	virtual BOOL PumpMessage() override;
 
-// Implementation
+	// Implementation
 	afx_msg void OnAppAbout();
 	DECLARE_MESSAGE_MAP()
 
 private:
-   bool InitializeCef();
-   void UninitializeCef();
+	bool InitializeCef();
+	void UninitializeCef();
 
-   CefRefPtr<CefApp> m_app;
+	CefRefPtr<CefApp> m_app;
+	CMainFrame* main_frame;
 };
 
 extern CefMfcdDemoApp theApp;

@@ -124,7 +124,36 @@ BOOL CefMfcdDemoApp::InitInstance()
 	// The one and only window has been initialized, so show and update it
 	m_pMainWnd->ShowWindow(SW_SHOW);
 	m_pMainWnd->UpdateWindow();
+
+	main_frame = static_cast<CMainFrame*>(AfxGetMainWnd());
 	return TRUE;
+}
+
+BOOL CefMfcdDemoApp::PreTranslateMessage(MSG* pMsg)
+{
+	auto msg = pMsg->message;
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		BOOL bCtrl = ::GetKeyState(VK_CONTROL) & 0x8000;
+
+		if (bCtrl)
+		{	
+			switch (pMsg->wParam)
+			{
+			case VK_OEM_PLUS:
+			case 0x6B: //num pad +	
+				main_frame->ZoomIn();
+				break;
+			case VK_OEM_MINUS:
+			case 0x6D: //num pad -
+				main_frame->ZoomOut();
+				break;
+			default: break;
+			}
+		}
+	}
+
+	return CWinApp::PreTranslateMessage(pMsg);
 }
 
 int CefMfcdDemoApp::ExitInstance()
@@ -132,25 +161,25 @@ int CefMfcdDemoApp::ExitInstance()
 	//TODO: handle additional resources you may have added
 	AfxOleTerm(FALSE);
 
-   UninitializeCef();
+	UninitializeCef();
 
 	return CWinApp::ExitInstance();
 }
 
 BOOL CefMfcdDemoApp::PumpMessage()
 {
-   auto result = CWinApp::PumpMessage();
+	auto result = CWinApp::PumpMessage();
 
-   // If there are other messages on queue then return right away
-   // otherwise CEF has a habit of eating keystrokes not meant for it
-   MSG msg;
-   if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
-	   return result;
+	// If there are other messages on queue then return right away
+	// otherwise CEF has a habit of eating keystrokes not meant for it
+	MSG msg;
+	if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
+		return result;
 
-   // Allow Cef to do his thing
-   CefDoMessageLoopWork();
-   
-   return result;
+	// Allow Cef to do his thing
+	CefDoMessageLoopWork();
+
+	return result;
 }
 
 // CefMfcdDemoApp message handlers
@@ -163,7 +192,7 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// Dialog Data
+	// Dialog Data
 	enum { IDD = IDD_ABOUTBOX };
 
 protected:
@@ -215,6 +244,7 @@ bool CefMfcdDemoApp::InitializeCef()
 
 void CefMfcdDemoApp::UninitializeCef()
 {
-   CefShutdown();
+	CefShutdown();
 }
+
 
