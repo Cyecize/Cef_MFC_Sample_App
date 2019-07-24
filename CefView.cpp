@@ -1,4 +1,3 @@
-
 // CefDemoView.cpp : implementation of the CefDemoView class
 //
 
@@ -25,7 +24,7 @@
 IMPLEMENT_DYNCREATE(CefDemoView, CView)
 
 BEGIN_MESSAGE_MAP(CefDemoView, CView)
-	ON_WM_SIZE()
+		ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 // CefDemoView construction/destruction
@@ -33,32 +32,28 @@ END_MESSAGE_MAP()
 CefDemoView::CefDemoView()
 {
 	// TODO: add construction code here
-
 }
 
 CefDemoView::~CefDemoView()
 {
-	if (m_clientHandler != nullptr)
-		m_clientHandler->DetachDelegate();
+	if (this->clientHandler != nullptr)
+		this->clientHandler->DetachDelegate();
 }
 
 BOOL CefDemoView::PreCreateWindow(CREATESTRUCT& cs)
 {
 	// TODO: Modify the Window class or styles here by modifying
 	//  the CREATESTRUCT cs
-
 	return CView::PreCreateWindow(cs);
 }
 
 void CefDemoView::OnActivateView(BOOL bActivate, CView* pActivateView, CView* pDeactiveView)
 {
-	m_wndMain = AfxGetMainWnd();
-
+	this->mainFrame = static_cast<CMainFrame*>(AfxGetMainWnd());
 	return CView::OnActivateView(bActivate, pActivateView, pDeactiveView);
 }
 
 // CefDemoView drawing
-
 void CefDemoView::OnDraw(CDC* /*pDC*/)
 {
 	CefDoc* pDoc = GetDocument();
@@ -69,9 +64,7 @@ void CefDemoView::OnDraw(CDC* /*pDC*/)
 	// TODO: add draw code for native data here
 }
 
-
 // CefDemoView diagnostics
-
 #ifdef _DEBUG
 void CefDemoView::AssertValid() const
 {
@@ -90,14 +83,11 @@ CefDoc* CefDemoView::GetDocument() const // non-debug version is inline
 }
 #endif //_DEBUG
 
-
 void CefDemoView::OnBrowserCreated(CefRefPtr<CefBrowser> browser)
 {
-	m_browser = browser;
+	this->browserInstance = browser;
 
-	auto main = static_cast<CMainFrame*>(m_wndMain);
-
-	main->SetOnZoomChanged([](double zoomLevel, CefRefPtr<CefBrowser> browserInstance)
+	this->mainFrame->SetOnZoomChanged([](double zoomLevel, CefRefPtr<CefBrowser> browserInstance)
 	{
 		browserInstance->GetHost()->SetZoomLevel(zoomLevel);
 	}, browser);
@@ -109,51 +99,44 @@ void CefDemoView::OnBrowserClosing(CefRefPtr<CefBrowser> browser)
 
 void CefDemoView::OnBrowserClosed(CefRefPtr<CefBrowser> browser)
 {
-	if (m_browser != nullptr &&
-		m_browser->GetIdentifier() == browser->GetIdentifier())
+	if (this->browserInstance != nullptr && this->browserInstance->GetIdentifier() == browser->GetIdentifier())
 	{
-		m_browser = nullptr;
-
-		m_clientHandler->DetachDelegate();
+		this->browserInstance = nullptr;
+		this->clientHandler->DetachDelegate();
 	}
 }
 
-void CefDemoView::OnSetAddress(std::string const & url)
+void CefDemoView::OnSetAddress(std::string const& url)
 {
-	auto main = static_cast<CMainFrame*>(m_wndMain);
-	if (main != nullptr)
+	if (this->mainFrame != nullptr)
 	{
-		auto newurl = CString{ url.c_str() };
-		if (newurl.Find(m_startUrl) >= 0)
+		auto newurl = CString{url.c_str()};
+		if (newurl.Find(this->startingUrl) >= 0)
 			newurl = "";
 
-		main->SetUrl(newurl);
+		this->mainFrame->SetUrl(newurl);
 	}
 }
 
-void CefDemoView::OnSetTitle(std::string const & title)
+void CefDemoView::OnSetTitle(std::string const& title)
 {
 	::SetWindowText(m_hWnd, CefString(title).ToWString().c_str());
 }
 
 void CefDemoView::OnSetFullscreen(bool const fullscreen)
 {
-	if (m_browser != nullptr)
+	if (this->browserInstance != nullptr)
 	{
 		if (fullscreen)
-		{
-			CefWindowsHelpers::Maximize(m_browser);
-		}
+			CefWindowsHelpers::Maximize(this->browserInstance);
 		else
-		{
-			CefWindowsHelpers::Restore(m_browser);
-		}
+			CefWindowsHelpers::Restore(this->browserInstance);
 	}
 }
 
 void CefDemoView::OnSetLoadingState(bool const isLoading,
-	bool const canGoBack,
-	bool const canGoForward)
+                                    bool const canGoBack,
+                                    bool const canGoForward)
 {
 }
 
@@ -163,7 +146,7 @@ void CefDemoView::OnInitialUpdate()
 
 	InitStartUrl();
 
-	auto rect = RECT{ 0 };
+	auto rect = RECT{0};
 	GetClientRect(&rect);
 
 	CefWindowInfo info;
@@ -172,23 +155,31 @@ void CefDemoView::OnInitialUpdate()
 	CefBrowserSettings browserSettings;
 	browserSettings.web_security = STATE_DISABLED;
 
-	m_clientHandler = new ClientHandler(this);
-	m_clientHandler->CreateBrowser(info, browserSettings, CefString(m_startUrl));
+	this->clientHandler = new ClientHandler(this);
+	this->clientHandler->CreateBrowser(info, browserSettings, CefString(this->startingUrl));
 }
 
 void CefDemoView::OnSize(UINT nType, int cx, int cy)
 {
 	CView::OnSize(nType, cx, cy);
 
-	if (m_clientHandler != nullptr)
+	if (this->clientHandler != nullptr)
 	{
-		if (m_browser != nullptr)
+		if (this->browserInstance != nullptr)
 		{
-			auto hwnd = m_browser->GetHost()->GetWindowHandle();
-			auto rect = RECT{ 0 };
+			auto hwnd = this->browserInstance->GetHost()->GetWindowHandle();
+			auto rect = RECT{0};
 			GetClientRect(&rect);
 
-			::SetWindowPos(hwnd, HWND_TOP, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
+			::SetWindowPos(
+				hwnd,
+				HWND_TOP,
+				rect.left,
+				rect.top,
+				rect.right - rect.left,
+				rect.bottom - rect.top,
+				SWP_NOZORDER
+			);
 		}
 	}
 }
@@ -196,66 +187,54 @@ void CefDemoView::OnSize(UINT nType, int cx, int cy)
 BOOL CefDemoView::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
-	{
 		if (pMsg->wParam == VK_F5)
-		{
-			m_browser->Reload();
-		}
-	}
+			this->browserInstance->Reload();
 
 	return CView::PreTranslateMessage(pMsg);
 }
 
-void CefDemoView::Navigate(CString const & url)
+void CefDemoView::Navigate(CString const& url)
 {
-	if (m_browser != nullptr)
+	if (this->browserInstance != nullptr)
 	{
-		auto frame = m_browser->GetMainFrame();
+		auto frame = this->browserInstance->GetMainFrame();
 		if (frame != nullptr)
-		{
 			frame->LoadURL(CefString(url));
-		}
 	}
 }
 
 void CefDemoView::NavigateBack()
 {
-	if (m_browser != nullptr)
-	{
-		m_browser->GoBack();
-	}
+	if (this->browserInstance != nullptr)
+		this->browserInstance->GoBack();
 }
 
 void CefDemoView::NavigateForward()
 {
-	if (m_browser != nullptr)
-	{
-		m_browser->GoForward();
-	}
+	if (this->browserInstance != nullptr)
+		this->browserInstance->GoForward();
 }
 
 bool CefDemoView::CanNavigateBack()
 {
-	return m_browser != nullptr && m_browser->CanGoBack();
+	return this->browserInstance != nullptr && this->browserInstance->CanGoBack();
 }
 
 bool CefDemoView::CanNavigateForward()
 {
-
-	return m_browser != nullptr && m_browser->CanGoForward();
-
+	return this->browserInstance != nullptr && this->browserInstance->CanGoForward();
 }
 
 void CefDemoView::InitStartUrl()
 {
-	m_startUrl = "https://jesterous.net/?lang=en";
+	this->startingUrl = "https://jesterous.net/?lang=en";
 }
 
 void CefDemoView::CloseBrowser()
 {
-	if (m_browser != nullptr)
+	if (this->browserInstance != nullptr)
 	{
-		::DestroyWindow(m_browser->GetHost()->GetWindowHandle());
-		//m_browser->GetHost()->CloseBrowser(true);
+		::DestroyWindow(this->browserInstance->GetHost()->GetWindowHandle());
+		//this->browserInstance->GetHost()->CloseBrowser(true);
 	}
 }
